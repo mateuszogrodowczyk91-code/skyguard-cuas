@@ -319,6 +319,7 @@
         <div class="sensor" data-k="gps"><div class="icon">⌖</div><div class="label">GPS</div><div class="status dim" id="st-gps">NO SIGNAL</div><div class="age none" id="age-gps">--</div><div class="check dim" id="ck-gps"></div></div>
         <div class="sensor" data-k="rid"><div class="icon">◈</div><div class="label">Remote ID</div><div class="status dim" id="st-rid">NO SIGNAL</div><div class="age none" id="age-rid">--</div><div class="check dim" id="ck-rid"></div></div>
         <div class="sensor" data-k="cam"><div class="icon">▣</div><div class="label">CloudEdge</div><div class="status dim" id="st-cam">NO SIGNAL</div><div class="age none" id="age-cam">--</div><div class="check dim" id="ck-cam"></div></div>
+        <div class="sensor" data-k="vis"><div class="icon">◎</div><div class="label" title="Camera AI · visual track (PixEagle / Pixel)">Camera AI</div><div class="status dim" id="st-vis">NO SIGNAL</div><div class="age none" id="age-vis">--</div><div class="check dim" id="ck-vis"></div></div>
         <div class="sensor" data-k="sync"><div class="icon">⇄</div><div class="label">Cloud sync</div><div class="status dim" id="st-sync">NO SIGNAL</div><div class="age none" id="age-sync">--</div><div class="check dim" id="ck-sync"></div></div>
       </div>
       <div class="recent-wrap">
@@ -439,6 +440,30 @@
     return Math.max(0, Math.floor((Date.now() - t) / 1000));
   }
 
+  // Visual (camera AI) detections: PixEagle bridge (source "pixeagle",
+  // device pixeagle-pixel / pixeagle-ptz / pixeagle-cloudedge) and the
+  // on-device Pixel detector (source "pixel-visual").
+  function isVisual(p) {
+    if (!p || typeof p !== "object") return false;
+    return p.event === "uas_visual_track" || p.source === "pixeagle" || p.source === "pixel-visual" ||
+      p._device === "pixeagle";
+  }
+  function visualDevice(p) {
+    return String(p.device || (p.source === "pixel-visual" ? "pixel-visual" : (p._device || p.source || "camera")));
+  }
+  function visualTracks(maxAgeSec) {
+    // latest event per (device, track_id); active = not ended and fresh
+    const by = {};
+    for (const it of state.items || []) {
+      const p = it.payload || {};
+      if (!isVisual(p) || p.track_id == null) continue;
+      by[visualDevice(p) + "#" + p.track_id] = { it, p };
+    }
+    const all = Object.values(by);
+    const active = all.filter((x) => x.p.phase !== "end" && (ageSec(x.it.ts) ?? 1e9) <= maxAgeSec);
+    return { all, active };
+  }
+
   function extractPoint(item) {
     const p = item.payload || {};
     let lat = null, lon = null, opLat = null, opLon = null, hae = null;
@@ -455,8 +480,10 @@
     if (typeof rid.operator_lat === "number" && typeof rid.operator_lon === "number") {
       opLat = rid.operator_lat; opLon = rid.operator_lon;
     }
+    const vis = isVisual(p);
     const trackId =
       (rid && rid.id) ||
+      (vis && p.track_id != null ? visualDevice(p) + "#" + p.track_id : null) ||
       p._device ||
       p.source ||
       p.camera_id ||
@@ -466,8 +493,9 @@
       hash: item.hash,
       lat, lon, hae, opLat, opLon,
       trackId: String(trackId),
-      source: (p._device || p.source || "—"),
+      source: vis ? visualDevice(p) : (p._device || p.source || "—"),
       event: p.event || p.status || "detection",
+      visual: vis,
       scores: p.scores || null,
       status: p.status || null,
       remoteId: rid.id || null,
@@ -649,6 +677,10 @@
         '<span class="tag">' + escapeHtml(String(p.source)) + "</span>" +
         '<span class="tag">' + escapeHtml(String(p.event)) + "</span>" +
         (p.status ? '<span class="tag">' + escapeHtml(String(p.status)) + "</span>" : "") +
+        (p.visual && p.payload.phase ? '<span class="tag">' + escapeHtml(String(p.payload.phase)) + "</span>" : "") +
+        (p.visual && p.payload.class_name != null ? '<span class="tag">' + escapeHtml(String(p.payload.class_name)) +
+          (typeof p.payload.confidence === "number" ? " " + Math.round(p.payload.confidence * 100) + "%" : "") + "</span>" : "") +
+        (p.visual && typeof p.payload.bearing_deg_est === "number" ? '<span class="tag">brg ' + p.payload.bearing_deg_est.toFixed(1) + "°</span>" : "") +
         (p.lat != null ? '<span class="tag">' + p.lat.toFixed(5) + ", " + p.lon.toFixed(5) + "</span>" : "") +
         "</div>";
       el.addEventListener("click", () => {
@@ -718,7 +750,7 @@
   function computeSourceAges() {
     const now = Date.now();
     const ages = {
-      rf24: null, rf5: null, gps: null, rid: null, cam: null, sync: state.lastPollAt ? Math.floor((now - state.lastPollAt) / 1000) : null,
+      rf24: null, rf5: null, gps: null, rid: null, cam: null, vis: null, sync: state.lastPollAt ? Math.floor((now - state.lastPollAt) / 1000) : null,
     };
     for (const it of state.items || []) {
       const p = it.payload || {};
@@ -726,7 +758,8 @@
       const touch = (k) => { if (a != null && (ages[k] == null || a < ages[k])) ages[k] = a; };
       if (p.gps || (p.remote_id && p.remote_id.lat != null)) touch("gps");
       if (p.remote_id && (p.remote_id.id || p.remote_id.operator_id)) touch("rid");
-      if (p.source === "cloudedge" || p.camera_vendor === "CloudEdge" || p.camera_id) touch("cam");
+      if (p.source === "cloudedge" || p.camera_vendor === "CloudEdge" || p.camera_id || p.device === "pixeagle-cloudedge") touch("cam");
+      if (isVisual(p)) touch("vis");
       if (p.rf || p.sigint || p.source === "rf" || (p.scores && p.scores.freq_mhz != null)) {
         touch("rf24"); touch("rf5");
       }
@@ -745,6 +778,10 @@
     setSensor("gps", has("gps") ? "OK" : "NO SIGNAL", has("gps") ? "ok" : "dim", ages.gps);
     setSensor("rid", has("rid") ? "OK — signal" : "NO SIGNAL", has("rid") ? "ok" : "dim", ages.rid);
     setSensor("cam", has("cam") ? "OK — linked" : "NO SIGNAL", has("cam") ? "ok" : "dim", ages.cam);
+    const vt = visualTracks(30);
+    setSensor("vis",
+      !has("vis") ? "NO SIGNAL" : (vt.active.length ? vt.active.length + " VISUAL TRACK" + (vt.active.length > 1 ? "S" : "") : "OK — no track"),
+      !has("vis") ? "dim" : (vt.active.length ? "warn" : "ok"), ages.vis);
     if (state.lastPollOk) setSensor("sync", "OK — live", "ok", ages.sync);
     else if (state.token) setSensor("sync", "ERROR", "bad", ages.sync);
     else setSensor("sync", "NO SIGNAL", "dim", null);
@@ -785,6 +822,10 @@
     const cov = ici.cov ?? ici.covariance;
     const threatIdx = ici.threat_idx ?? scores.threat_idx ?? scores.lr;
 
+    const vtracks = visualTracks(30);
+    const pixVis = countBy((pl) => pl.source === "pixel-visual" || pl.device === "pixeagle-pixel");
+    const lastVis = latestBy((pl) => isVisual(pl));
+    const lv = (lastVis && lastVis.payload) || {};
     const pixelAge = pixel.last ? ageSec(pixel.last.ts) : null;
     const bboxAge = bbox.last ? ageSec(bbox.last.ts) : null;
 
@@ -799,6 +840,15 @@
     lines.push("   Packets          : " + (pixel.n ? fieldOrDash(pixel.n) : '<span class="dim">--</span>'));
     lines.push("   Last packet      : " + field(pixel.last ? pixel.last.ts : null));
     lines.push("   Detector mode    : " + field(detMode));
+    lines.push("   Visual tracks    : " + (vtracks.active.length ? '<span class="red">' + vtracks.active.length + " ACTIVE</span>" : (lastVis ? '<span class="grn">0 active</span>' : '<span class="dim">NO SIGNAL</span>')) +
+      "   Pixel cam evts: " + (pixVis.n ? fieldOrDash(pixVis.n) : '<span class="dim">--</span>'));
+    if (lastVis) {
+      lines.push("   Last visual      : " + fieldOrDash(visualDevice(lv) + " #" + lv.track_id + " " + (lv.class_name ?? "") +
+        (typeof lv.confidence === "number" ? " " + Math.round(lv.confidence * 100) + "%" : "") + " " + (lv.phase || "")) +
+        "   age " + ageLabel(ageSec(lastVis.ts)));
+      lines.push("   Bearing (est.)   : " + (typeof lv.bearing_deg_est === "number" ? fieldOrDash(lv.bearing_deg_est.toFixed(1) + "°") : '<span class="dim">--</span>') +
+        "   Input: " + field(lv.input));
+    }
     lines.push('<span class="rule">------------------------------------------------------------------------------</span>');
     lines.push('<span class="yel"> [NPU THERM]</span>');
     lines.push("   DynFPS           : " + field(dynFps) + "   Temp: " + field(tempC) + "   Mode: " + field(npuMode));
@@ -825,7 +875,7 @@
     lines.push("   " + field(audit));
     lines.push('<span class="rule">------------------------------------------------------------------------------</span>');
     lines.push('<span class="dim"> TCP PORTS         :</span> <span class="wht">9090 Blackbox/ICI Server</span> · <span class="wht">9091 Pixel→HUD Listener</span>');
-    lines.push('<span class="dim"> NODES             :</span> <span class="wht">pixel=' + pixel.n + " centrum=" + centrum.n + " cloudedge=" + bbox.n + "</span>");
+    lines.push('<span class="dim"> NODES             :</span> <span class="wht">pixel=' + pixel.n + " centrum=" + centrum.n + " cloudedge=" + bbox.n + " camera-ai=" + countBy((pl) => isVisual(pl)).n + "</span>");
     return lines.map((l) => '<div class="hud-line">' + l + "</div>").join("");
   }
 
