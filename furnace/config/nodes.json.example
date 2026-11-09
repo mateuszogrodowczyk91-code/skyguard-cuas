@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "cameras": [
+    {
+      "name": "tapo-front",
+      "rtsp_url": "rtsp://192.168.1.100:554/stream1",
+      "ptz_ip": "192.168.1.100",
+      "enabled": true
+    }
+  ],
+  "nodes": [
+    {
+      "name": "pixel-field-1",
+      "host": "100.x.x.x",
+      "port": 9092,
+      "role": "tactical",
+      "enabled": true
+    }
+  ]
+}

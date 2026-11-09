@@ -1,0 +1,20 @@
+services:
+  skyguard-demo:
+    build: .
+    image: skyguard-portfolio:local
+    environment:
+      SKYGUARD_EMULATION: "true"
+      BLACKBOX_PORT: "19090"
+      EVIDENCE_PORT: "18765"
+      REF_LAT: "51.9851"
+      REF_LON: "5.8987"
+    command: ["python", "furnace/07_Emulation/run_emulation_demo.py"]
+
+  skyguard-test:
+    image: skyguard-portfolio:local
+    build: .
+    environment:
+      SKYGUARD_EMULATION: "true"
+      BLACKBOX_PORT: "19090"
+      EVIDENCE_PORT: "18765"
+    command: ["bash", "scripts/run_tests.sh"]

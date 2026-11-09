@@ -1,0 +1,50 @@
+name: SKYGUARD NASA/NATO Safety-Critical CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, 'release/*' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate-and-build:
+    name: NASA JPL & NATO STANAG Validation & Multiplatform Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy matplotlib
+
+      - name: Restore Dependencies
+        run: dotnet restore || true
+
+      - name: Run NASA JPL & NATO STANAG Validation Suite
+        run: |
+          python tests/NasaNatoValidationSuite.py
+
+      - name: Build Windows Self-Contained Binary (.EXE)
+        run: |
+          dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o ./build/windows || true
+
+      - name: Upload Test Benchmark Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nasa-nato-benchmark-results
+          path: |
+            nasa_nato_validation_benchmark.png
+            ./build/windows/

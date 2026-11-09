@@ -1,0 +1,186 @@
+#!/usr/bin/env bash
+# SKYGUARD cloud helper — status / logs / config / enable / disable / set / add-camera / add-node / tailscale
+set -euo pipefail
+
+SKYGUARD_ROOT="${SKYGUARD_ROOT:-/opt/skyguard}"
+ENV_FILE="${SKYGUARD_ENV_FILE:-$SKYGUARD_ROOT/config/skyguard.env}"
+NODES_JSON="${SKYGUARD_NODES_JSON:-$SKYGUARD_ROOT/config/nodes.json}"
+SERVICE_NAME="${SKYGUARD_SERVICE:-skyguard}"
+
+usage() {
+  cat <<'U'
+Usage: skyguard <command> [args]
+
+  status                 systemctl status + last log lines + enable flags
+  logs [N]               last N lines of journal (default 80)
+  restart                restart systemd service
+  config                 print /opt/skyguard/config/skyguard.env
+  enable <subsystem>     set ENABLE_<SUBSYSTEM>=true  (BLACKBOX|FUSION|PIXEL_TRACKER|PTZ_TRACKER)
+  disable <subsystem>    set ENABLE_<SUBSYSTEM>=false
+  set KEY VALUE          set any KEY=VALUE in skyguard.env
+  add-camera <name> <rtsp_url> [ptz_ip]
+  add-node <name> <host> <port> [role]
+  tailscale              show Tailscale status / 100.x IP / MagicDNS
+
+Environment:
+  SKYGUARD_ROOT, SKYGUARD_ENV_FILE, SKYGUARD_NODES_JSON, SKYGUARD_SERVICE
+U
+}
+
+ensure_env() {
+  mkdir -p "$(dirname "$ENV_FILE")" "$(dirname "$NODES_JSON")"
+  if [ ! -f "$ENV_FILE" ]; then
+    if [ -f "$SKYGUARD_ROOT/config/skyguard.env.example" ]; then
+      cp "$SKYGUARD_ROOT/config/skyguard.env.example" "$ENV_FILE"
+    else
+      touch "$ENV_FILE"
+    fi
+  fi
+  if [ ! -f "$NODES_JSON" ]; then
+    echo '{"version":1,"cameras":[],"nodes":[]}' > "$NODES_JSON"
+  fi
+}
+
+set_kv() {
+  local key="$1" val="$2"
+  ensure_env
+  if grep -qE "^${key}=" "$ENV_FILE" 2>/dev/null; then
+    # portable in-place replace
+    local tmp
+    tmp="$(mktemp)"
+    awk -v k="$key" -v v="$val" 'BEGIN{FS=OFS="="} $1==k{$0=k"="v} {print}' "$ENV_FILE" > "$tmp"
+    mv "$tmp" "$ENV_FILE"
+  else
+    echo "${key}=${val}" >> "$ENV_FILE"
+  fi
+  echo "Set ${key}=${val} in ${ENV_FILE}"
+}
+
+subsystem_to_key() {
+  local s
+  s="$(echo "$1" | tr '[:lower:]-' '[:upper:]_')"
+  case "$s" in
+    BLACKBOX|ENABLE_BLACKBOX) echo ENABLE_BLACKBOX ;;
+    FUSION|ENABLE_FUSION) echo ENABLE_FUSION ;;
+    PIXEL|PIXEL_TRACKER|ENABLE_PIXEL_TRACKER) echo ENABLE_PIXEL_TRACKER ;;
+    PTZ|PTZ_TRACKER|ENABLE_PTZ_TRACKER) echo ENABLE_PTZ_TRACKER ;;
+    *) echo ""; return 1 ;;
+  esac
+}
+
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+  ""|-h|--help|help) usage ;;
+  status)
+    echo "=== systemd: ${SERVICE_NAME} ==="
+    systemctl is-active "$SERVICE_NAME" 2>/dev/null || true
+    systemctl status "$SERVICE_NAME" --no-pager -l 2>/dev/null | head -40 || true
+    echo
+    echo "=== enable flags (${ENV_FILE}) ==="
+    ensure_env
+    grep -E '^(ENABLE_|SKYGUARD_EMULATION|BLACKBOX_PORT|RTSP_URL|PTZ_|HUD_|REF_|SSD_LOG)' "$ENV_FILE" || true
+    echo
+    echo "=== nodes.json ==="
+    if command -v python3 >/dev/null; then
+      python3 -c "import json;print(json.dumps(json.load(open('$NODES_JSON')),indent=2))" 2>/dev/null || cat "$NODES_JSON"
+    else
+      cat "$NODES_JSON"
+    fi
+    echo
+    if command -v tailscale >/dev/null 2>&1; then
+      echo "=== tailscale ==="
+      tailscale status 2>/dev/null | head -20 || true
+      echo -n "Tailscale IPv4: "; tailscale ip -4 2>/dev/null || echo "(not connected)"
+    fi
+    ;;
+  logs)
+    n="${1:-80}"
+    journalctl -u "$SERVICE_NAME" -n "$n" --no-pager 2>/dev/null || \
+      (echo "journal unavailable; /tmp/furnace_master.log:"; tail -n "$n" /tmp/furnace_master.log 2>/dev/null || true)
+    ;;
+  restart)
+    systemctl restart "$SERVICE_NAME"
+    systemctl is-active "$SERVICE_NAME"
+    ;;
+  config)
+    ensure_env
+    echo "# ${ENV_FILE}"
+    cat "$ENV_FILE"
+    ;;
+  enable)
+    key="$(subsystem_to_key "${1:-}")" || { echo "Unknown subsystem: ${1:-}"; exit 1; }
+    set_kv "$key" true
+    echo "Restart with: skyguard restart"
+    ;;
+  disable)
+    key="$(subsystem_to_key "${1:-}")" || { echo "Unknown subsystem: ${1:-}"; exit 1; }
+    set_kv "$key" false
+    echo "Restart with: skyguard restart"
+    ;;
+  set)
+    [ $# -ge 2 ] || { echo "Usage: skyguard set KEY VALUE"; exit 1; }
+    key="$1"; shift
+    set_kv "$key" "$*"
+    ;;
+  add-camera)
+    [ $# -ge 2 ] || { echo "Usage: skyguard add-camera <name> <rtsp_url> [ptz_ip]"; exit 1; }
+    name="$1"; rtsp="$2"; ptz="${3:-}"
+    ensure_env
+    python3 - "$NODES_JSON" "$name" "$rtsp" "$ptz" <<'PY'
+import json, sys
+path, name, rtsp, ptz = sys.argv[1:5]
+with open(path) as f:
+    data = json.load(f)
+cams = data.setdefault("cameras", [])
+cams[:] = [c for c in cams if c.get("name") != name]
+entry = {"name": name, "rtsp_url": rtsp, "enabled": True}
+if ptz:
+    entry["ptz_ip"] = ptz
+cams.append(entry)
+with open(path, "w") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")
+print(f"Added camera '{name}' -> {path}")
+print("Tip: address LAN cams via Tailscale IP/MagicDNS, then:")
+print("  skyguard set RTSP_URL", rtsp)
+print("  skyguard enable PIXEL_TRACKER && skyguard restart")
+PY
+    ;;
+  add-node)
+    [ $# -ge 3 ] || { echo "Usage: skyguard add-node <name> <host> <port> [role]"; exit 1; }
+    name="$1"; host="$2"; port="$3"; role="${4:-tactical}"
+    ensure_env
+    python3 - "$NODES_JSON" "$name" "$host" "$port" "$role" <<'PY'
+import json, sys
+path, name, host, port, role = sys.argv[1:6]
+with open(path) as f:
+    data = json.load(f)
+nodes = data.setdefault("nodes", [])
+nodes[:] = [n for n in nodes if n.get("name") != name]
+nodes.append({"name": name, "host": host, "port": int(port), "role": role, "enabled": True})
+with open(path, "w") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")
+print(f"Added node '{name}' @ {host}:{port} -> {path}")
+print("Use Tailscale 100.x / MagicDNS for cloud↔field reachability.")
+PY
+    ;;
+  tailscale)
+    if ! command -v tailscale >/dev/null 2>&1; then
+      echo "tailscale not installed. On the VM: curl -fsSL https://tailscale.com/install.sh | sh"
+      exit 1
+    fi
+    echo "=== tailscale status ==="
+    tailscale status || true
+    echo
+    echo -n "IPv4: "; tailscale ip -4 2>/dev/null || echo "(offline)"
+    echo -n "IPv6: "; tailscale ip -6 2>/dev/null || true
+    echo
+    echo "Use 100.x addresses or MagicDNS names in RTSP_URL / add-camera / add-node."
+    echo "Example: skyguard add-camera front 'rtsp://tapo-front:554/stream1' 100.x.y.z"
+    ;;
+  *)
+    echo "Unknown command: $cmd"; usage; exit 1 ;;
+esac

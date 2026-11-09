@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "description": "Extra cameras and remote nodes. Consumed by furnace_master_start_all.py when SKYGUARD_NODES_JSON points here.",
+  "cameras": [],
+  "nodes": []
+}

@@ -1,0 +1,23 @@
+name: skyguard-portfolio-ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt pytest ruff
+      - name: Ruff
+        run: ruff check furnace/lib furnace/07_Emulation furnace/08_Evidence_API furnace/06_Testy_Automatyczne
+      - name: Unit + extras + e2e
+        run: bash scripts/run_tests.sh

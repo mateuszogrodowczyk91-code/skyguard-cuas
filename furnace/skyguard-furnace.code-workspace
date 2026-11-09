@@ -1,0 +1,38 @@
+{
+    "folders": [
+        {
+            "name": "00 Master Launcher",
+            "path": "00_Master_Launcher"
+        },
+        {
+            "name": "01 Teren Pixel Node",
+            "path": "01_Teren_Pixel"
+        },
+        {
+            "name": "02 Blackbox PS4 Linux Engine",
+            "path": "02_Blackbox_PS4_Linux"
+        },
+        {
+            "name": "03 Gora Windows Tactical HUD",
+            "path": "03_Gora_Windows_HUD"
+        },
+        {
+            "name": "04 Certyfikacje i Dokumenty",
+            "path": "04_Certyfikacje_i_Dokumenty"
+        },
+        {
+            "name": "05 Deploy i CI CD",
+            "path": "05_Deploy_i_CI_CD"
+        },
+        {
+            "name": "06 Testy Automatyczne",
+            "path": "06_Testy_Automatyczne"
+        }
+    ],
+    "settings": {
+        "python.analysis.extraPaths": [
+            "./02_Blackbox_PS4_Linux",
+            "./00_Master_Launcher"
+        ]
+    }
+}

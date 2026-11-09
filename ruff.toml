@@ -1,0 +1,17 @@
+target-version = "py311"
+line-length = 100
+exclude = [
+  "extras/realtime-dsp",
+  "extras/acoustic-cuas",
+  "extras/github-android-summary",
+  "furnace/01_Teren_Pixel",
+  "furnace/03_Gora_Windows_HUD",
+  "furnace/00_Master_Launcher/skyguard_beka_mode_v6.py",
+  "furnace/00_Master_Launcher/furnace_master_start_all.py",
+  "furnace/02_Blackbox_PS4_Linux/pixeagle-skyguard-integration-v3.py",
+  "furnace/02_Blackbox_PS4_Linux/skyguard_fusion_heartbeat_v5.py",
+]
+
+[lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]

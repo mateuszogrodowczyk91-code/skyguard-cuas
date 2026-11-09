@@ -1,0 +1,102 @@
+{
+ "a": 6.8356889246878945,
+ "b": -0.7105270378260258,
+ "sigma_log": 0.15998368956933703,
+ "profiles": [
+  {
+   "model": "DJI Matrice 300 RTK",
+   "prop_in": 21.0,
+   "blades": 2,
+   "f0_median_hz": 97.82317472399596,
+   "f0_p10_hz": 90.55703616952623,
+   "f0_p90_hz": 102.20197334105617,
+   "n_clips": 49,
+   "source": "neaptide"
+  },
+  {
+   "model": "DJI Mavic 2 Enterprise",
+   "prop_in": 8.7,
+   "blades": 2,
+   "f0_median_hz": 201.043906829267,
+   "f0_p10_hz": 186.11070836504828,
+   "f0_p90_hz": 213.02940918251176,
+   "n_clips": 49,
+   "source": "neaptide"
+  },
+  {
+   "model": "Holybro S500",
+   "prop_in": 10.0,
+   "blades": 2,
+   "f0_median_hz": 214.39955325550486,
+   "f0_p10_hz": 178.60762742153156,
+   "f0_p90_hz": 234.60108769705533,
+   "n_clips": 49,
+   "source": "neaptide"
+  },
+  {
+   "model": "Tarot X6",
+   "prop_in": 18.0,
+   "blades": 2,
+   "f0_median_hz": 149.55443452546805,
+   "f0_p10_hz": 145.3833013640177,
+   "f0_p90_hz": 155.438670005414,
+   "n_clips": 49,
+   "source": "neaptide"
+  },
+  {
+   "model": "DJI Matrice 300 RTK",
+   "prop_in": 21.0,
+   "blades": 2,
+   "f0_median_hz": 91.72945058106917,
+   "f0_p10_hz": 91.02600193414341,
+   "f0_p90_hz": 183.73198620714328,
+   "n_clips": 45,
+   "source": "pl"
+  },
+  {
+   "model": "DJI Mavic 3",
+   "prop_in": 9.45,
+   "blades": 2,
+   "f0_median_hz": 149.55443452546805,
+   "f0_p10_hz": 142.05382308723586,
+   "f0_p90_hz": 157.45108720162463,
+   "n_clips": 45,
+   "source": "pl"
+  },
+  {
+   "model": "DJI Mini 2",
+   "prop_in": 4.7,
+   "blades": 2,
+   "f0_median_hz": 315.37091739649895,
+   "f0_p10_hz": 299.5541031521364,
+   "f0_p90_hz": 327.77922041590233,
+   "n_clips": 45,
+   "source": "pl"
+  },
+  {
+   "model": "DJI Phantom 4",
+   "prop_in": 9.45,
+   "blades": 2,
+   "f0_median_hz": 176.77668819794548,
+   "f0_p10_hz": 169.6611675458332,
+   "f0_p90_hz": 185.1592195018863,
+   "n_clips": 45,
+   "source": "pl"
+  },
+  {
+   "model": "DJI S900",
+   "prop_in": 15.0,
+   "blades": 2,
+   "f0_median_hz": 149.55443452546805,
+   "f0_p10_hz": 144.63812605217734,
+   "f0_p90_hz": 155.438670005414,
+   "n_clips": 45,
+   "source": "pl"
+  }
+ ],
+ "fit_report": {
+  "lomo_overall": 0.8218527315914489,
+  "resub": 0.8622327790973872,
+  "n_clips": 421
+ }
+}

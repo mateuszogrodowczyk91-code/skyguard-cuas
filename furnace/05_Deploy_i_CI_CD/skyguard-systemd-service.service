@@ -1,0 +1,26 @@
+[Unit]
+Description=SKYGUARD / PROJECT FURNACE Master Orchestrator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/skyguard/00_Master_Launcher
+EnvironmentFile=-/opt/skyguard/config/skyguard.env
+Environment=SSD_LOG_PATH=/var/log/skyguard/furnace_sigint.log
+Environment=SKYGUARD_NODES_JSON=/opt/skyguard/config/nodes.json
+ExecStartPre=/bin/mkdir -p /var/log/skyguard
+ExecStart=/bin/bash /opt/skyguard/00_Master_Launcher/start_all.sh
+Restart=always
+RestartSec=5s
+KillSignal=SIGINT
+TimeoutStopSec=20
+SyslogIdentifier=skyguard
+
+# Soft limits suitable for e2-micro / e2-small
+MemoryMax=1G
+CPUQuota=95%
+
+[Install]
+WantedBy=multi-user.target

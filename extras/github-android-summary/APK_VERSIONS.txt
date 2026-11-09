@@ -1,0 +1,57 @@
+Android Pixel APK builds present locally (not all copied into this zip to keep size down):
+skyguard-pixel10pro.apk
+skyguard-pixel10pro-v1.2.apk
+skyguard-pixel10pro-v1.2.1.apk
+skyguard-pixel10pro-v1.2.2.apk
+skyguard-pixel10pro-v1.2.3.apk
+skyguard-pixel10pro-v1.2.4.apk
+skyguard-pixel10pro-v1.2.5.apk
+skyguard-pixel10pro-v1.2.6.apk
+skyguard-pixel10pro-v1.2.7.apk
+skyguard-pixel10pro-v1.2.8.apk
+skyguard-pixel10pro-v1.2.9.apk
+skyguard-pixel10pro-v1.3.0.apk
+skyguard-pixel10pro-v1.3.1.apk
+skyguard-pixel10pro-v1.3.2.apk
+skyguard-pixel10pro-v1.4.0.apk
+skyguard-pixel10pro-v1.5.0.apk
+skyguard-pixel10pro-v1.5.1.apk
+skyguard-pixel10pro-v1.5.2.apk
+skyguard-pixel10pro-v1.5.3.apk
+skyguard-pixel10pro-v1.6.0.apk
+skyguard-pixel10pro-v1.6.1.apk
+skyguard-pixel10pro-v1.6.2.apk
+skyguard-pixel10pro-v1.6.3.apk
+skyguard-pixel10pro-v1.6.4.apk
+skyguard-pixel10pro-v1.6.5.apk
+skyguard-pixel10pro-v1.6.6.apk
+skyguard-pixel10pro-v1.6.7.apk
+skyguard-pixel10pro-v1.6.8.apk
+skyguard-pixel10pro-v1.6.9.apk
+skyguard-pixel10pro-v1.7.0.apk
+skyguard-pixel10pro-v1.7.1.apk
+skyguard-pixel10pro-v1.7.2.apk
+skyguard-pixel10pro-v1.7.3.apk
+skyguard-pixel10pro-v1.7.4.apk
+skyguard-pixel10pro-v1.7.5.apk
+skyguard-pixel10pro-v1.7.6.apk
+skyguard-pixel10pro-v1.7.7.apk
+skyguard-pixel10pro-v1.7.8.apk
+skyguard-pixel10pro-v1.7.9.apk
+skyguard-pixel10pro-v1.8.0.apk
+skyguard-pixel10pro-v1.8.1.apk
+skyguard-pixel10pro-v1.8.2.apk
+skyguard-pixel10pro-v1.8.3.apk
+skyguard-pixel10pro-v1.8.4.apk
+skyguard-pixel10pro-v1.8.5.apk
+skyguard-pixel10pro-v1.8.6.apk
+
+Newest Android source tree on box: /workspace/sg-pixel-v186 (versionName from build.gradle.kts):
+        versionCode = 47
+        versionName = "1.8.6"
+
+Centrum Windows zips on box:
+SKYGUARD_Centrum_1.0.0.zip
+SKYGUARD_Centrum_1.1.0.zip
+SKYGUARD_Centrum_1.2.0.zip
+SKYGUARD_Centrum_1.2.1.zip

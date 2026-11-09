@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0-android</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>SkyGuard.Tactical</RootNamespace>
+
+    <!-- Android Application Configuration -->
+    <ApplicationId>com.skyguard.tactical</ApplicationId>
+    <ApplicationVersion>8</ApplicationVersion>
+    <ApplicationDisplayVersion>1.8.0</ApplicationDisplayVersion>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+
+    <!-- Optimization & Hardware Capabilities -->
+    <AndroidEnablePreAot>true</AndroidEnablePreAot>
+    <AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
+  </PropertyGroup>
+</Project>
