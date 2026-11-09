@@ -319,7 +319,7 @@
         <div class="sensor" data-k="gps"><div class="icon">⌖</div><div class="label">GPS</div><div class="status dim" id="st-gps">NO SIGNAL</div><div class="age none" id="age-gps">--</div><div class="check dim" id="ck-gps"></div></div>
         <div class="sensor" data-k="rid"><div class="icon">◈</div><div class="label">Remote ID</div><div class="status dim" id="st-rid">NO SIGNAL</div><div class="age none" id="age-rid">--</div><div class="check dim" id="ck-rid"></div></div>
         <div class="sensor" data-k="cam"><div class="icon">▣</div><div class="label">CloudEdge</div><div class="status dim" id="st-cam">NO SIGNAL</div><div class="age none" id="age-cam">--</div><div class="check dim" id="ck-cam"></div></div>
-        <div class="sensor" data-k="vis"><div class="icon">◎</div><div class="label" title="Camera AI · visual track (PixEagle / Pixel)">Camera AI</div><div class="status dim" id="st-vis">NO SIGNAL</div><div class="age none" id="age-vis">--</div><div class="check dim" id="ck-vis"></div></div>
+        <div class="sensor" data-k="vis"><div class="icon">◎</div><div class="label" title="Camera AI · visual track: pixel-visual (Pixel on-device), pixeagle-pixel / pixeagle-ptz / pixeagle-cloudedge (PixEagle on PC)">Camera AI</div><div class="status dim" id="st-vis">NO SIGNAL</div><div class="age none" id="age-vis">--</div><div class="check dim" id="ck-vis"></div></div>
         <div class="sensor" data-k="sync"><div class="icon">⇄</div><div class="label">Cloud sync</div><div class="status dim" id="st-sync">NO SIGNAL</div><div class="age none" id="age-sync">--</div><div class="check dim" id="ck-sync"></div></div>
       </div>
       <div class="recent-wrap">
@@ -842,6 +842,11 @@
     lines.push("   Detector mode    : " + field(detMode));
     lines.push("   Visual tracks    : " + (vtracks.active.length ? '<span class="red">' + vtracks.active.length + " ACTIVE</span>" : (lastVis ? '<span class="grn">0 active</span>' : '<span class="dim">NO SIGNAL</span>')) +
       "   Pixel cam evts: " + (pixVis.n ? fieldOrDash(pixVis.n) : '<span class="dim">--</span>'));
+    const visBy = {};
+    for (const it of state.items || []) { const pl = it.payload || {}; if (isVisual(pl)) { const k = visualDevice(pl); visBy[k] = (visBy[k] || 0) + 1; } }
+    const visKeys = ["pixel-visual", "pixeagle-pixel", "pixeagle-ptz", "pixeagle-cloudedge"];
+    for (const k of Object.keys(visBy)) if (!visKeys.includes(k)) visKeys.push(k);
+    lines.push("   Visual sources   : " + visKeys.map((k) => '<span class="' + (visBy[k] ? "wht" : "dim") + '">' + escapeHtml(k) + "=" + (visBy[k] || 0) + "</span>").join(" "));
     if (lastVis) {
       lines.push("   Last visual      : " + fieldOrDash(visualDevice(lv) + " #" + lv.track_id + " " + (lv.class_name ?? "") +
         (typeof lv.confidence === "number" ? " " + Math.round(lv.confidence * 100) + "%" : "") + " " + (lv.phase || "")) +
